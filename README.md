@@ -15,3 +15,6 @@ http://rpubs.com/markspice/387810
 
 ## Model definitions:
 
+| No. | Code | No. predictions | Min. frequency | Other details |
+| :-: | :--- | :-------------: | :------------: | :------------ |
+| 1   | 1    | 1               | 1              | -             |

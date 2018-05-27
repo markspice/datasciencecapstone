@@ -19,14 +19,14 @@ http://rpubs.com/markspice/387810
 - 01GenerateNgramData.R: R code for loading data and generating ngram-word pariring realtive frequency tables
 - 02GenerateCleanNgramData.R: R code for transforming ngrams before generating relative frequency tables
 - 03GenerateTestData.R: R code for generating model success rate test data sets
-- 04GenerateModelDefinitions: R code for defining the model definitions
-- 05GenerateTestPredictions: R code for generating test predictions from each model against the test data sets
-- 06GenerateFunctions: R code defining word prediction functions for speed tests for selected models
-- 07GenerateSizeTestFunction: R code defining function to test model using different size training data
-- 08PredictionTests: R code for building test result output tables
+- 04GenerateModelDefinitions.R: R code for defining the model specifications
+- 05GenerateTestPredictions.R: R code for generating test predictions from each model against the test data sets
+- 06GenerateFunctions.R: R code defining word prediction functions for speed tests for selected models
+- 07GenerateSizeTestFunction.R: R code defining function to test model using different size training data
+- 08PredictionTests.R: R code for building test result output tables
 - ngramfrequency.RData: Source data used in generating word frequency plots in milestone report
 - testResults.RData: Test results generated from 08PredictionTests used in slide deck
-- cleanNGram33b: Chosen initial ngram-word frequency pairing data used in Shiny app. Built from model c3b with max 3-gram input
+- cleanNGram33b.csv: Chosen initial ngram-word frequency pairing data used in Shiny app. Built from model c3b with max 3-gram input
 
 ## Model definitions:
 

@@ -9,6 +9,9 @@ transition: rotate
 .small-code pre code {
   font-size: 1em;
 }
+.slide .reveal .state-background {
+  background: #d7edce;
+} 
 </style>
 
 
@@ -16,6 +19,8 @@ Rules of grammar, language convention and commonalities of popular phrases mean 
 
 Method
 ========================================================
+type: slide
+
 <small>
 In designing the model for the prediction algorithm, certain choices needed to be made regarding the trade-offs between, for instance:
 
@@ -33,6 +38,7 @@ In total, 37 models (36 simple backoffs and one model that included skipped inte
 
 ========================================================
 class: small-code
+type: slide
 
 <small>The best performing models achieved success rates of 22-23% compared to 10-11% for the null option, albeit with widely varying memory requirements.</small>
 ```{r, echo=FALSE}
@@ -58,16 +64,18 @@ kable(sizetest)
 
 The application
 ========================================================
+type: slide
 <small>
-The application takes any text as an input and predicts the three most likely next words.</small>
+The application takes any text as an input and predicts the three most likely next words by taking the final (at most) three words entered and finding the word that follows in the training data with the highest frequency.</small>
 ```{r  echo=FALSE, out.width = "100%"}
 include_graphics("Application.jpg") 
 ```
 <small>Correct predictions can be confirmed by selecting the appropriate word.
-Submitting the final passage of text will help further train the algorithm to the user's preferences.
+Submitting the final passage of text helps further train the algorithm.
 </small>
 
 ========================================================
+type: slide
 <h2>Future development:</h2>
 <small>
 - This prototype application is intended as a proof of concept.

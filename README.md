@@ -32,7 +32,8 @@ http://rpubs.com/markspice/387810
 | 13  | c3b4 | 3               | 5              | Name, time, No. substitution and elngation replacement |
 
 Null models:
-| No. | Code | No. predictions | Min. frequency | Other details |
-| :-: | :--- | :-------------: | :------------: | :------------ |
-| N1  | N1   | 1               | N/A            | N/A           |
-| N3  | N3   | 3               | N/A            | N/A           |
+
+| No. | Code | No. predictions | Min. frequency | Other details                                          |
+| :-: | :--- | :-------------: | :------------: | :----------------------------------------------------- |
+| N1  | N1   | 1               | N/A            | N/A                                                    |
+| N3  | N3   | 3               | N/A            | N/A                                                    |

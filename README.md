@@ -15,20 +15,24 @@ http://rpubs.com/markspice/387810
 
 ## Model definitions:
 
+| No. | Code | No. predictions | Min. frequency | Other details                                          |
+| :-: | :--- | :-------------: | :------------: | :----------------------------------------------------- |
+| 1   | 1    | 1               | 1              | -                                                      |
+| 2   | 2    | 1               | 2              | -                                                      |
+| 3   | 3    | 3               | 1              | -                                                      |
+| 4   | 4    | 3               | 1              | Matches include missing intermediate words             |
+| 5   | 3b   | 3               | 2              | -                                                      |
+| 6   | 3b2  | 3               | 3              | -                                                      |
+| 7   | 3b3  | 3               | 4              | -                                                      |
+| 8   | 3b4  | 3               | 5              | -                                                      |
+| 9   | c3   | 3               | 1              | Name, time, No. substitution and elngation replacement |
+| 10  | c3b  | 3               | 2              | Name, time, No. substitution and elngation replacement |
+| 11  | c3b2 | 3               | 3              | Name, time, No. substitution and elngation replacement |
+| 12  | c3b3 | 3               | 4              | Name, time, No. substitution and elngation replacement |
+| 13  | c3b4 | 3               | 5              | Name, time, No. substitution and elngation replacement |
+
+Null models:
 | No. | Code | No. predictions | Min. frequency | Other details |
 | :-: | :--- | :-------------: | :------------: | :------------ |
-| 1   | 1    | 1               | 1              | -             |
-| 2   | 1    | 1               | 1              | -             |
-| 3   | 1    | 1               | 1              | -             |
-| 4   | 1    | 1               | 1              | -             |
-| 5   | 1    | 1               | 1              | -             |
-| 6   | 1    | 1               | 1              | -             |
-| 7   | 1    | 1               | 1              | -             |
-| 8   | 1    | 1               | 1              | -             |
-| 9   | 1    | 1               | 1              | -             |
-| 10  | 1    | 1               | 1              | -             |
-| 11  | 1    | 1               | 1              | -             |
-| 12  | 1    | 1               | 1              | -             |
-| 13  | 1    | 1               | 1              | -             |
-| :-: | :--- | :-------------: | :------------: | :------------ |
-| 1   | 1    | 1               | 1              | -             |
+| N1  | N1   | 1               | N/A            | N/A           |
+| N3  | N3   | 3               | N/A            | N/A           |

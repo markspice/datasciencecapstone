@@ -1,0 +1,266 @@
+---
+title: 'Data Science Capstone: Milestone Report'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(fig.align = "center")
+```
+
+## Introduction
+
+The aim of this report is to provide an initial analysis of the frequencies of words and word groupings within sections of English language text collected by a web crawler from Twitter posts, personal blogs and news sites, as a first step in developing a word prediction algorithm.
+
+The data for this analysis is taken from the HCCorpora collection. Further information on the corpora can be found at http://web.archive.org/web/20161014134025/http://www.corpora.heliohost.org:80/index.html
+
+```{r loaddata, warning = FALSE, message = FALSE, include = FALSE}
+
+setwd("C:/Users/Mark/Documents/Coursera/Capstone/")
+
+##load add-on packages
+
+x <- c("knitr", "textclean", "tidytext", "ggplot2", "scales", "tidyr", "dplyr", "repmis")
+lapply(x, require, character.only = TRUE)
+
+## Get data
+
+nodir <- FALSE
+nozip <- FALSE
+
+if(!file.exists("./final/en_US/en_US.twitter.txt")) {
+        nodir <- TRUE
+        if (!file.exists("Coursera-SwiftKey.zip")) {
+                nozip <- TRUE
+                fileurl <- "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
+                download.file(fileurl,"./Coursera-SwiftKey.zip")
+        }
+        unzip("Coursera-SwiftKey.zip")
+}
+setwd("./final/en_US")
+
+con <- file("en_US.blogs.txt", "r")
+blogs <- readLines(con, skipNul = TRUE, encoding = "UTF-8")
+close(con)
+
+con <- file("en_US.news.txt", "r")
+news <- readLines(con, skipNul = TRUE, encoding = "UTF-8")
+close(con)
+
+con <- file("en_US.twitter.txt", "r")
+twitter <- readLines(con, skipNul = TRUE, encoding = "UTF-8")
+close(con)
+
+```
+
+## Data Summary
+
+The text for this analysis is drawn from three categories of web content. Included are almost 900,000 lines of text from personal blogs, over 77,000 lines from news articles, and over 2,360,000 lines of Twitter posts. Ranging from one to over 40,000 characters and with an average length of 230, the lines of text taken from blog postings are longest, followed by the news articles. With an average length of just 69 characters, the lines of text from Twitter posts are, unsuprisingly, the shortest. 
+
+```{r datacontent}
+
+datasummary <- data.frame(cbind(source = c("blogs","news","twitter"),
+                     lines = c(length(blogs), length(news), length(twitter)),
+                     minLength = c(min(sapply(blogs, nchar)),min(sapply(news, nchar)),min(sapply(twitter, nchar))),
+                     maxLength = c(max(sapply(blogs, nchar)),max(sapply(news, nchar)),max(sapply(twitter, nchar))),
+                     avgLength = c(round(mean(sapply(blogs, nchar)),0),round(mean(sapply(news, nchar)),0),round(mean(sapply(twitter, nchar)),0))))
+datasummary$lines <- as.numeric(paste(datasummary$lines))
+datasummary$minLength <- as.numeric(paste(datasummary$minLength))
+datasummary$maxLength <- as.numeric(paste(datasummary$maxLength))
+datasummary$avgLength <- as.numeric(paste(datasummary$avgLength))
+
+kable(datasummary)
+
+```
+
+For reasons of resource constraint, the remainder of this analysis is conducted on a random sample of approximately one percent of the total lines from these three sources. This sample will also be used to fit the prediction algorithm models. These models are then tested against a second sample drawn from the unused lines.
+
+In addition, the training and test datasets have been transformed through the following functions to enable a more consistent analysis of word frequencies and word group frequencies:
+
+- All characters with the exception of alphanumeric characters, spaces, apostrophes, and hyphens are stripped from the text.
+- All contractions (don't, you're, she's, etc.) are replaced with their long form (do not, you are, she is). This is also done for words with missing apostrophes (dont, youre, shes) unless it is not clear whether the apostrophe is missing or another word in the English language is intended (e.g. cant).
+- Ordinals (1st, 2nd, 3rd) are replaced with the full written forms (first, second, third).
+- All words are converted to lower case.
+
+```{r sample, include = FALSE}
+
+allText <- rbind(data.frame(source = "blogs", text = blogs, stringsAsFactors = FALSE),
+                 data.frame(source = "news", text = news, stringsAsFactors = FALSE),
+                 data.frame(source = "twitter", text = twitter, stringsAsFactors = FALSE))
+allText$source <- as.factor(allText$source)
+
+len = length(allText$text)
+set.seed(10101)
+smp <- rbinom(len, 1, 0.01)
+smpText <- allText[smp == 1,]
+
+smpText$text <- gsub("[^[:alnum:][:space:]'-]", "", smpText$text)
+
+a <- c(" isnt ", " hasnt ", " hadnt ", " didnt ", " wouldnt ", " couldnt ", " shouldnt ", " shes ", " theres ", " whos ", " dont ", " youd ", " hed ", " theyd ", " ive ", " youve ", " weve ", " theyve ", " youre ", " theyre ")
+b <- c(" is not ", " has not ", " had not ", " did not ", " would not ", " could not ", " should not ", " she is ", " there is ", " who is ", " do not ", " you would ", " he would ", " they would ", " i have ", " you have ", " we have ", " they have ", " you are ", " they are ")
+for(i in seq_along(a)) smpText$text <- gsub(a[i], b[i], smpText$text, fixed = TRUE)
+
+a <- c("^isnt ", "^hasnt ", "^hadnt ", "^didnt ", "^wouldnt ", "^couldnt ", "^shouldnt ", "^shes ", "^theres ", "^whos ", "^dont ", "^youd ", "^hed ", "^theyd ", "^ive ", "^youve ", "^weve ", "^theyve ", "^youre ", "^theyre ")
+b <- c("^is not ", "^has not ", "^had not ", "^did not ", "^would not ", "^could not ", "^should not ", "^she is ", "^there is ", "^who is ", "^do not ", "^you would ", "^he would ", "^they would ", "^i have ", "^you have ", "^we have ", "^they have ", "^you are ", "^they are ")
+for(i in seq_along(a)) smpText$text <- gsub(a[i], b[i], smpText$text, fixed = TRUE)
+
+a <- c(" isnt$", " hasnt$", " hadnt$", " didnt$", " wouldnt$", " couldnt$", " shouldnt$", " shes$", " theres$", " whos$", " dont$", " youd$", " hed$", " theyd$", " ive$", " youve$", " weve$", " theyve$", " youre$", " theyre$")
+b <- c(" is not$", " has not$", " had not$", " did not$", " would not$", " could not$", " should not$", " she is$", " there is$", " who is$", " do not$", " you would$", " he would$", " they would$", " i have$", " you have$", " we have$", " they have$", " you are$", " they are$")
+for(i in seq_along(a)) smpText$text <- gsub(a[i], b[i], smpText$text, fixed = TRUE)
+
+smpText$text <- replace_contraction(smpText$text)
+smpText$text <- replace_ordinal(smpText$text)
+
+test <- allText[smp == 0,]
+len = length(test$text)
+set.seed(13579)
+smp <- rbinom(len, 1, 0.001)
+test <- test[smp == 1,]
+
+test$text <- gsub("[^[:alnum:][:space:]'-]", "", test$text)
+
+a <- c(" isnt ", " hasnt ", " hadnt ", " didnt ", " wouldnt ", " couldnt ", " shouldnt ", " shes ", " theres ", " whos ", " dont ", " youd ", " hed ", " theyd ", " ive ", " youve ", " weve ", " theyve ", " youre ", " theyre ")
+b <- c(" is not ", " has not ", " had not ", " did not ", " would not ", " could not ", " should not ", " she is ", " there is ", " who is ", " do not ", " you would ", " he would ", " they would ", " i have ", " you have ", " we have ", " they have ", " you are ", " they are ")
+for(i in seq_along(a)) test$text <- gsub(a[i], b[i], test$text, fixed = TRUE)
+
+a <- c("^isnt ", "^hasnt ", "^hadnt ", "^didnt ", "^wouldnt ", "^couldnt ", "^shouldnt ", "^shes ", "^theres ", "^whos ", "^dont ", "^youd ", "^hed ", "^theyd ", "^ive ", "^youve ", "^weve ", "^theyve ", "^youre ", "^theyre ")
+b <- c("^is not ", "^has not ", "^had not ", "^did not ", "^would not ", "^could not ", "^should not ", "^she is ", "^there is ", "^who is ", "^do not ", "^you would ", "^he would ", "^they would ", "^i have ", "^you have ", "^we have ", "^they have ", "^you are ", "^they are ")
+for(i in seq_along(a)) test$text <- gsub(a[i], b[i], test$text, fixed = TRUE)
+
+a <- c(" isnt$", " hasnt$", " hadnt$", " didnt$", " wouldnt$", " couldnt$", " shouldnt$", " shes$", " theres$", " whos$", " dont$", " youd$", " hed$", " theyd$", " ive$", " youve$", " weve$", " theyve$", " youre$", " theyre$")
+b <- c(" is not$", " has not$", " had not$", " did not$", " would not$", " could not$", " should not$", " she is$", " there is$", " who is$", " do not$", " you would$", " he would$", " they would$", " i have$", " you have$", " we have$", " they have$", " you are$", " they are$")
+for(i in seq_along(a)) test$text <- gsub(a[i], b[i], test$text, fixed = TRUE)
+
+test$text <- replace_contraction(test$text)
+test$text <- replace_ordinal(test$text)
+
+```
+
+As with the number of characters per line in the complete dataset, within the sample personal blogs typically have the greatest numbers of words per line and the greatest variation in the range of numbers of words per line.
+
+Whilst style guides and professional editing mean that you would expect fewer unique words to feature in news reports than in personal blogs or tweets (news stories should generally use more formal vocabulary and contain fewer spelling mistakes), this does not seem to be reflected in the relative frequency of words occuring within the lines from each source. The 6,194 unique words that make up the sample of lines of text from news sources recur, on average, fewer than four times each, compared to around 12 or 13 times for blogs and tweets.
+
+```{r wordtotals, warning = FALSE, message = FALSE}
+
+smpWords <- unnest_tokens(smpText, words, text, token = "words", to_lower = TRUE, drop = FALSE)
+includeWords <- grepl("^([A-Z]|'|-)+$", smpWords$words, ignore.case = TRUE)
+smpWordTotals <- data.frame(table(smpWords$words[includeWords == TRUE], smpWords$source[includeWords == TRUE]), stringsAsFactors = FALSE)
+names(smpWordTotals) <- c("word","source","freq")
+smpWordTotals$source <- as.factor(smpWordTotals$source)
+smpWordTotals <- subset(smpWordTotals, smpWordTotals$freq > 0)
+
+smpObsTotals <- data.frame(table(smpWords$text[includeWords == TRUE], smpWords$source[includeWords == TRUE]), stringsAsFactors = FALSE)
+names(smpObsTotals) <- c("text","source","wordCount")
+smpObsTotals$source <- as.factor(smpObsTotals$source)
+smpObsTotals <- subset(smpObsTotals, smpObsTotals$wordCount > 0)
+
+g <- ggplot(smpObsTotals, aes(x = wordCount)) +
+        geom_histogram() +
+        scale_y_continuous(trans = "log", breaks = c(1, 10, 100,1000,10000)) +
+        facet_grid(. ~ source) +
+        labs(x = "number of words", y = "frequency", title = "Words per line") +
+        theme(plot.title = element_text(hjust = 0.5))
+
+print(g)
+
+smpdatasummary <- data.frame(cbind(source = c("blogs","news","twitter"),
+                                   lines = c(length(smpText$text[smpText$source == "blogs"]), length(smpText$text[smpText$source == "news"]), length(smpText$text[smpText$source == "twitter"])),
+                                   total_words = tapply(smpWordTotals$freq, smpWordTotals$source, sum),
+                                   unique_words = tapply(smpWordTotals$freq, smpWordTotals$source, length)))
+smpdatasummary$lines <- as.numeric(paste(smpdatasummary$lines))
+smpdatasummary$total_words <- as.numeric(paste(smpdatasummary$total_words))
+smpdatasummary$avg_words_per_line <- round(smpdatasummary$total_words / smpdatasummary$line, 2)
+smpdatasummary$unique_words <- as.numeric(paste(smpdatasummary$unique_words))
+smpdatasummary$avg_recurrence <- round(smpdatasummary$total_words / smpdatasummary$unique_words, 2)
+
+kable(select(smpdatasummary, source, lines, total_words, avg_words_per_line, unique_words, avg_recurrence), row.names = FALSE)
+```
+
+For each data source over fifty percent of the individual words are featured only once. Whilst some words do recur many times within the sample text, most of these are short conjunctions, determiners, pronouns or prepositions.  
+
+```{r wordfrequency}
+
+plotdata <- rbind(data.frame(wordLength = "All words", smpWordTotals),
+                  data.frame(wordLength = "Words >3 characters", smpWordTotals[nchar(as.character(smpWordTotals$word)) > 3,]))
+
+g <- ggplot(plotdata, aes(x = source, y = freq)) +
+        geom_boxplot() +
+        scale_y_continuous(trans = "log", breaks = c(1, 10, 100,1000,10000)) +
+        coord_flip() +
+        facet_grid(wordLength ~ .) +
+        labs(y = "frequency", title = "Individual word frequency") +
+        theme(plot.title = element_text(hjust = 0.5))
+
+print(g)
+
+smpquantiles <- quantile(plotdata$freq[plotdata$wordLength == "All words"], c(0,0.25,0.5,0.75,1))
+smp3quantiles <- quantile(plotdata$freq[plotdata$wordLength == "Words >3 characters"], c(0,0.25,0.5,0.75,1))
+smpq <- data.frame(cbind(c("All words", "Words >3 characters"),
+                         rbind(smpquantiles, smp3quantiles)))
+names(smpq) <- c("All sources","Min","Q1","Median","Q3","Max")
+
+kable(smpq, row.names = FALSE, align = "lccccc")
+```
+
+The figure below shows the distribution of the numbers of unique words following each one, two and three word term (ngram) within the sample. In general, the more words that are included in the input, the fewer the number of words found that follow it.
+
+```{r getngram, warning = FALSE, message = FALSE, include = FALSE}
+
+source_data("https://github.com/markspice/datasciencecapstone/blob/master/ngramfrequency.RData?raw=true")
+
+```
+``` {r termfrequency, warning = FALSE, message = FALSE}
+smpDataFrame <- rbind(data.frame(inputWords = "1", smp2WordTotals),
+                      data.frame(inputWords = "2", unite(smp3WordTotals, col = "term", c("word_1", "word_2"), sep = " ")),
+                      data.frame(inputWords = "3", unite(smp4WordTotals, col = "term", c("word_1", "word_2", "word_3"), sep = " ")))
+
+d2 <- data.frame(tapply(smpDataFrame$freq[smpDataFrame$inputWords == "1"], smpDataFrame$term[smpDataFrame$inputWords == "1"], length))
+d3 <- data.frame(tapply(smpDataFrame$freq[smpDataFrame$inputWords == "2"], smpDataFrame$term[smpDataFrame$inputWords == "2"], length))
+d4 <- data.frame(tapply(smpDataFrame$freq[smpDataFrame$inputWords == "3"], smpDataFrame$term[smpDataFrame$inputWords == "3"], length))
+
+plotdata <- rbind(data.frame(inputWords = "1 word input", term = names(d2[,1]), wordCount = d2[,1]),
+                  data.frame(inputWords = "2 word input", term = names(d3[,1]), wordCount = d3[,1]),
+                  data.frame(inputWords = "3 word input", term = names(d4[,1]), wordCount = d4[,1]))
+
+g <- ggplot(plotdata, aes(x = wordCount)) +
+        geom_histogram(binwidth = 1) +
+        scale_y_continuous(trans = "log", breaks = c(1, 10, 100,1000,10000)) +
+        xlim(c(0,500)) +
+        facet_grid(inputWords ~ .) +
+        labs(x = "number of subsequent words", y = "frequency", title = "Number of unique subsequent words per input term") +
+        theme(plot.title = element_text(hjust = 0.5))
+
+print(g)
+
+```
+
+There are two reasons for this that have contrasting implications for the building of a prediction algorithm:
+
+1. The longer the ngram, the more specific the phrase, and hence the fewer the number of potential words that could reasonably be expected to follow it.
+2. The longer the ngram, the less likely it is to recur in the sample data, and so the fewer the total number of subsequent words included.
+
+The former would suggest that, because it contains more information, a longer ngram would result in an accurate prediction with greater frequency. The latter, by contrast, suggests that there is a danger of over fitting by relying on the one or few specific occurences of each ngram in the sample as being representative of English language text in general.
+
+##Prediction Algorithm Design Methodology
+
+It is intended that we will test a number of different models in order to address the issues identified in the nature of this data. The basic concept of the algorithm will be to produce a prediction of the next word in a phrase based on the previous n words. To test the relative impact of the above two implications, we will test models with n equal to one, two and three.
+
+To ensure full coverage, where the inputted n words are not found within the training data, the last n-1 words will be used instead. The number of words used in generating the prediction will be successively reduced until a match occurs.
+
+If there are multiple possible words that follow the input term, the word that occurs with the highest frequency after the input term will be preferred. In the case of a tie, the word that occurs with greatest frequency overall within the training set is chosen.
+
+We will also test amendments to these models that are intended to reduce the size of the model, either without a loss of predictive power, or with an increase due to reduced over-fitting. These amendments will include:
+
+1. Conversion of word elongations in the text
+2. Replacement of all common names with a single term
+3. Replacement of times with a single term
+4. Replacement of numbers with a single term
+
+The argument for these amendments is that the next word in a phrase should be equally likely regardless of the specific number, time, etc, used in the particular phrase as the number/time itself does not alter the underlying grammar of the sentence.
+
+In addition, we will test models with different minimum recurrence thresholds for inclusion in the algorithm, i.e. only base a prediction upon patterns of text that occur at least x times in the training set. This will reduce the size of the model and address the over fitting issue outlined above, but could result in lower precision due to the reduction in included information.
+
+Finally, we will assess the level of increase in predictive success obtainable from making three rather than one single prediction relative to any drop in runtime performance.
+
+All models will be tested against a subset of 1,000 ngrams drawn from the test sample extracted from the complete dataset. 

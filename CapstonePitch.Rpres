@@ -1,0 +1,83 @@
+Word Prediction Application
+========================================================
+author: Mark Spice
+date: 26 May 2018
+autosize: true
+transition: rotate
+
+<style>
+.small-code pre code {
+  font-size: 1em;
+}
+</style>
+
+
+Rules of grammar, language convention and commonalities of popular phrases mean that the probability that any one word will follow a string of preceding words is non-uniform in written English. Utilising the differences in relative frequency of word groupings in a large sample of text from news articles, blogs and Twitter posts, this application aims to predict the most likely word to follow any given string of words entered.
+
+Method
+========================================================
+<small>
+In designing the model for the prediction algorithm, certain choices needed to be made regarding the trade-offs between, for instance:
+
+1. size and efficiency vs prediction accuracy
+2. term coverage vs overfitting of uncommon phrases
+
+In total, 37 models (36 simple backoffs and one model that included skipped intermediate words) were tested for prediction accuracy against the null option of always predicting the most common word(s) in the English language. These models varied by: 
+
+- the maximum length of ngram input (1, 2 or 3 words)
+- the minimum frequency of an ngram-word pairing required to generate a prediction (1-4)
+- the number of predicted outputs (1 or 3)
+- name, time and number substitution and word elongation replacement
+</small>
+
+
+========================================================
+class: small-code
+
+<small>The best performing models achieved success rates of 22-23% compared to 10-11% for the null option, albeit with widely varying memory requirements.</small>
+```{r, echo=FALSE}
+require(knitr)
+require(repmis)
+testResults <- source_data("https://github.com/markspice/datasciencecapstone/blob/master/testResults.Rdata?raw=true")
+
+df <- data.frame(Model = c(3,5:8,12), 
+                 unigramSuccess = srate[c(3,5:8,12),4], unigramSize = ssize[c(3,5:8,12),4],
+                 bigramSuccess = srate[c(3,5:8,12),3], bigramSize = ssize[c(3,5:8,12),3],
+                 trigramSuccess = srate[c(3,5:8,12),2], trigramSize = ssize[c(3,5:8,12),2])
+
+kable(df)
+
+```
+
+<small>Additional tests were run to gauge the impact of increasing the initial sample size on model accuracy and performance.</small>
+```{r, echo=FALSE}
+
+kable(sizetest)
+
+```
+
+The application
+========================================================
+<small>
+The application takes any text as an input and predicts the three most likely next words.</small>
+```{r  echo=FALSE, out.width = "100%"}
+include_graphics("Application.jpg") 
+```
+<small>Correct predictions can be confirmed by selecting the appropriate word.
+Submitting the final passage of text will help further train the algorithm to the user's preferences.
+</small>
+
+========================================================
+<h2>Future development:</h2>
+<small>
+- This prototype application is intended as a proof of concept.
+- In the marketable version submitting the final text would perform additional functions (e.g. sending an email or saving a text file) in addition to updating the ngram frequency tables. In addition, these updates would be stored beyond the existing server session.
+</small>
+
+***
+
+<h2>Further information:</h2>
+<small>
+- Additional details, including model definitions, source data and code can be found at the [project repository](https://github.com/markspice/datasciencecapstone)
+- The prototype application is available [here](https://markspice.shinyapps.io/DataScienceCapstone/)
+</small>

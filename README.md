@@ -5,7 +5,7 @@ Capstone project for the JHU Coursera Data Science Specialization
 https://markspice.shinyapps.io/DataScienceCapstone/
 
 ## Product pitch:
-http://rpubs.com/markspice/392333
+http://rpubs.com/markspice/392341
 
 ## Milestone report:
 http://rpubs.com/markspice/387810
